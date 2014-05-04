@@ -107,6 +107,7 @@ array(array(int)) generate(int xsize,int ysize,int pits,int|void timeout)
 		foreach (area,array(int) col) foreach (col,int cell) if (cell>9) {done=0; break;}
 		if (!done) continue;
 		for (int x=0;x<sizeof(area);++x) for (int y=0;y<sizeof(area[0]);++y) area[x][y]+=10; //Hide it all in gravel again
+		call_out(say,0,"Found solvable game in "+tries+" tries.");
 		return area;
 	}
 	return 0;
@@ -119,7 +120,7 @@ void generator(int x,int y,int p)
 	int tries;
 	while (1)
 	{
-		array(array(int)) area=generate(x,y,p,1);
+		array(array(int)) area=generate(x,y,p,10);
 		if (area) {call_out(generated,0,x,y,p,area); break;}
 		if (!curgame) call_out(say,0,"Still generating... "+(++tries));
 	}
