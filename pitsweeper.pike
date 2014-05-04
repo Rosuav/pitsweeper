@@ -209,7 +209,8 @@ void sweep(string sweepme,int|void banner)
 		}
 		say("You sweep "+msg+". "+sweepmsg[area[x][y]-=10]);
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
-		buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
+		if (area[x][y]==9) buttons[x][y]->set_label("[/]")->set_sensitive(0);
+		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
 		if (!area[x][y]) //Empty! Sweep the surrounding areas too.
 		{
 			function trysweep=lambda(int x,int y)
