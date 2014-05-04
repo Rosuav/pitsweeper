@@ -121,7 +121,7 @@ void generator(int x,int y,int p)
 	{
 		array(array(int)) area=generate(x,y,p,1);
 		if (area) {call_out(generated,0,x,y,p,area); break;}
-		if (!curgame) say("Still generating... "+(++tries));
+		if (!curgame) call_out(say,0,"Still generating... "+(++tries));
 	}
 }
 
@@ -176,9 +176,7 @@ array sweepmsg=({
 
 void say(string newmsg)
 {
-	write("%s\n",newmsg);
-	//May need to append to msg
-	//msg->set_text(newmsg);
+	msg->set_text(newmsg);
 }
 
 void sweep(string sweepme,int|void banner)
@@ -187,7 +185,7 @@ void sweep(string sweepme,int|void banner)
 	if (sscanf(lower_case(sweepme),"%c%d",int ltr,int num) && ltr>='a' && ltr<='z' && num>0)
 	{
 		int x=ltr-'a',y=num-1;
-		if (x>=sizeof(area) || y>=sizeof(area[0])) {say(sprintf("Out of range (max is %c%d)\n",'A'-1+sizeof(area),sizeof(area[0]))); return;}
+		if (x>=sizeof(area) || y>=sizeof(area[0])) {say(sprintf("Out of range (max is %c%d)\n",'A'-1+sizeof(area),sizeof(area[0]))); return;} //Shouldn't happen
 		if (area[x][y]<10) return; //Already swept, ignore
 		string msg=sprintf("%c%d",'A'+x,1+y);
 		if (banner)
@@ -197,16 +195,14 @@ void sweep(string sweepme,int|void banner)
 			{
 				area[x][y]-=10;
 				buttons[x][y]->set_label(" ");
-				say("You remove the banner from "+msg+".");
 				return;
 			}
 			area[x][y]+=10;
 			buttons[x][y]->set_label("[/]");
-			say("You place a banner on "+msg+".");
 			return;
 		}
 		if (area[x][y]>19) return; //Has a banner - ignore the click
-		say("You sweep "+msg+". "+sweepmsg[area[x][y]-=10]);
+		area[x][y]-=10;
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
 		if (area[x][y]==9) buttons[x][y]->set_label("[/]")->set_sensitive(0);
 		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
