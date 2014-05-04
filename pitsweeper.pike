@@ -5,6 +5,8 @@ digging a pit end the game? does marking a non-pit?), etc.
 */
 
 array(array(int)) curgame; //Game field displayed to user
+array(array(int)) nextgame; //Game field ready to display
+array(array(GTK2.Button)) buttons;
 
 GTK2.Label msg;
 GTK2.Table tb;
@@ -110,6 +112,44 @@ array(array(int)) generate(int xsize,int ysize,int pits,int|void timeout)
 	return 0;
 }
 
+//Thread function: attempt to generate, time out every few seconds and give report,
+//and pass back a result via call_out to generated below.
+void generator(int x,int y,int p)
+{
+	int tries;
+	while (1)
+	{
+		array(array(int)) area=generate(x,y,p,1);
+		if (area) {call_out(generated,0,x,y,p,area); break;}
+		if (!curgame) say("Still generating... "+(++tries));
+	}
+}
+
+//Main thread callback when the generator thread succeeds.
+void generated(int xsz,int ysz,int pits,array(array(int)) area)
+{
+	if (curgame)
+	{
+		//Retain this game map for later. TODO: Save to disk.
+		nextgame=area;
+		return;
+	}
+	//Game generated. Let's do this!
+	//TODO: Check that the metadata (xsz,ysz,pits) matches what we want/expect.
+	//(If it doesn't, this is an old call_out or a race; just ignore it and go
+	//back to waiting for the other thread.)
+	curgame=area;
+	tb->resize(1,1);
+	buttons=allocate(xsz,allocate(ysz));
+	foreach (area;int x;array(int) col) foreach (col;int y;int cell)
+	{
+		GTK2.Button btn=buttons[x][y]=GTK2.Button("   ");
+		tb->attach_defaults(btn,y,y+1,x,x+1);
+		btn->signal_connect("event",button,sprintf("%c%d",'A'+x,1+y));
+	}
+	tb->show_all();
+}
+
 array sweepmsg=({
 	"The bristles do not bend at all.",
 	"Very few bristles bend.",
@@ -134,15 +174,17 @@ array sweepmsg=({
 		}
 */
 
-void say(string msg)
+void say(string newmsg)
 {
-	msg->set_text(msg);
+	write("%s\n",newmsg);
+	//May need to append to msg
+	//msg->set_text(newmsg);
 }
 
 void sweep(string sweepme,int|void banner)
 {
 	array(array(int)) area=curgame;
-	if (sscanf(sweepme,"%c%d",int ltr,int num) && ltr>='a' && ltr<='z' && num>0)
+	if (sscanf(lower_case(sweepme),"%c%d",int ltr,int num) && ltr>='a' && ltr<='z' && num>0)
 	{
 		int x=ltr-'a',y=num-1;
 		if (x>=sizeof(area) || y>=sizeof(area[0])) {say(sprintf("Out of range (max is %c%d)\n",'A'-1+sizeof(area),sizeof(area[0]))); return;}
@@ -161,11 +203,13 @@ void sweep(string sweepme,int|void banner)
 		{
 			//The command was "banner <loc>" not "sweep <loc>".
 			area[x][y]+=10;
+			buttons[x][y]->set_label("[/]");
 			say("You place a banner on "+msg+".");
 			return;
 		}
 		say("You sweep "+msg+". "+sweepmsg[area[x][y]-=10]);
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
+		buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
 		if (!area[x][y]) //Empty! Sweep the surrounding areas too.
 		{
 			function trysweep=lambda(int x,int y)
@@ -207,6 +251,14 @@ void sweep(string sweepme,int|void banner)
 	}
 }
 
+void button(GTK2.Button self,GTK2.GdkEvent ev,string loc)
+{
+	//Button click/blip
+	if (ev->type!="button_press") return;
+	if (ev->button==1) sweep(loc,0);
+	if (ev->button==3) sweep(loc,1);
+}
+
 int main()
 {
 	GTK2.setup_gtk();
@@ -214,8 +266,9 @@ int main()
 		->pack_start(GTK2.MenuBar()
 			->add(GTK2.MenuItem("(stub)"))
 		,0,0,0)
-		->pack_start(msg=GTK2.Label("This is a stub. There's currently no functionality here, sorry!"),0,0,0)
-		->add(tb=GTK2.Table(1,1,0))
+		->pack_start(msg=GTK2.Label(""),0,0,0)
+		->add(tb=GTK2.Table(1,1,1))
 	)->show_all()->signal_connect("delete-event",lambda() {exit(0);});
+	Thread.Thread(generator,10,10,10);
 	return -1;
 }
