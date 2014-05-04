@@ -148,6 +148,7 @@ void generated(int xsz,int ysz,int pits,array(array(int)) area)
 		tb->attach_defaults(btn,y,y+1,x,x+1);
 		btn->signal_connect("event",button,sprintf("%c%d",'A'+x,1+y));
 	}
+	sweep("A1");
 	tb->show_all();
 }
 
