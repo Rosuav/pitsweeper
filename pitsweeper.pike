@@ -144,7 +144,7 @@ void generated(int xsz,int ysz,int pits,array(array(int)) area)
 	buttons=allocate(xsz,allocate(ysz));
 	foreach (area;int x;array(int) col) foreach (col;int y;int cell)
 	{
-		GTK2.Button btn=buttons[x][y]=GTK2.Button("   ");
+		GTK2.Button btn=buttons[x][y]=GTK2.Button("   ")->set_focus_on_click(0);
 		tb->attach_defaults(btn,y,y+1,x,x+1);
 		btn->signal_connect("event",button,sprintf("%c%d",'A'+x,1+y));
 	}
