@@ -270,6 +270,6 @@ int main()
 		->pack_start(msg=GTK2.Label(""),0,0,0)
 		->add(tb=GTK2.Table(1,1,1))
 	)->show_all()->signal_connect("delete-event",lambda() {exit(0);});
-	Thread.Thread(generator,10,10,10);
+	Thread.Thread(generator,20,30,100);
 	return -1;
 }
