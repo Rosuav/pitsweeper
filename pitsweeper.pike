@@ -6,6 +6,9 @@ digging a pit end the game? does marking a non-pit?), etc.
 
 array(array(int)) curgame; //Game field displayed to user
 
+GTK2.Label msg;
+GTK2.Table tb;
+
 class region(int pits)
 {
 	multiset(int) unk=(<>); //Has (x<<8|y) for each unknown in the region
@@ -133,7 +136,7 @@ array sweepmsg=({
 
 void say(string msg)
 {
-	//some_label->set_text(msg);
+	msg->set_text(msg);
 }
 
 void sweep(string sweepme,int|void banner)
@@ -207,8 +210,12 @@ void sweep(string sweepme,int|void banner)
 int main()
 {
 	GTK2.setup_gtk();
-	GTK2.Window(GTK2.WindowToplevel)->set_title("Pitsweeper")
-		->add(GTK2.Label("This is a stub. There's currently no functionality here, sorry!"))
-		->show_all()->signal_connect("delete-event",lambda() {exit(0);});
+	GTK2.Window(GTK2.WindowToplevel)->set_title("Pitsweeper")->add(GTK2.Vbox(0,0)
+		->pack_start(GTK2.MenuBar()
+			->add(GTK2.MenuItem("(stub)"))
+		,0,0,0)
+		->pack_start(msg=GTK2.Label("This is a stub. There's currently no functionality here, sorry!"),0,0,0)
+		->add(tb=GTK2.Table(1,1,0))
+	)->show_all()->signal_connect("delete-event",lambda() {exit(0);});
 	return -1;
 }
