@@ -38,7 +38,7 @@ class region(int pits)
 	string _sprintf(int type) {return pits+" pits at "+map(indices(unk),lambda(int x) {return sprintf("%c%d",(x>>8)+'A',(x&255)+1);})*", ";}
 };
 
-region hint(array(array(int)) area,int cutoff)
+region hint(array(array(int)) area)
 {
 	array(region) regions=({ });
 	foreach (area;int x;array(int) col) foreach (col;int y;int npits)
@@ -51,7 +51,6 @@ region hint(array(array(int)) area,int cutoff)
 	}
 	foreach (values(regions),region r)
 	{
-		if (time()>=cutoff) return 0;
 		if (!r->pits || r->pits==sizeof(r->unk)) return r;
 		foreach (values(regions),region rr)
 		{
@@ -65,18 +64,16 @@ region hint(array(array(int)) area,int cutoff)
 	}
 }
 
-array(array(int)) generate(int xsize,int ysize,int pits,int|void timeout)
+array(array(int)) generate(int xsize,int ysize,int pits)
 {
-	int cutoff=time()+(timeout||3);
 	int tries=0;
-	while (time()<cutoff)
+	while (1)
 	{
 		++tries;
 		array(array(int)) area=allocate(xsize,allocate(ysize));
 		//Dig some pits.
 		for (int i=0;i<pits;++i)
 		{
-			if (time()>=cutoff) return 0;
 			int x=random(xsize),y=random(ysize);
 			if ((x<2 && y<2) || area[x][y]) {--i; continue;}
 			area[x][y]=19;
@@ -102,7 +99,7 @@ array(array(int)) generate(int xsize,int ysize,int pits,int|void timeout)
 		//return area; //Early abort if you want non-guaranteed games
 		//Attempt to solve the puzzle. If we succeed, return, otherwise continue.
 		area[0][0]-=10; //Dig the first hole.
-		while (region r=hint(area,cutoff)) foreach (indices(r->unk),int xy) if (area[xy>>8][xy&255]>9) area[xy>>8][xy&255]-=10;
+		while (region r=hint(area)) foreach (indices(r->unk),int xy) if (area[xy>>8][xy&255]>9) area[xy>>8][xy&255]-=10;
 		int done=1;
 		foreach (area,array(int) col) foreach (col,int cell) if (cell>9) {done=0; break;}
 		if (!done) continue;
@@ -110,17 +107,15 @@ array(array(int)) generate(int xsize,int ysize,int pits,int|void timeout)
 		call_out(say,0,"Found solvable game in "+tries+" tries.");
 		return area;
 	}
-	return 0;
 }
 
-//Thread function: attempt to generate, time out every few seconds and give report,
-//and pass back a result via call_out to generated below.
+//Thread function: attempt to generate games, passing them back via call_out to generated below.
 void generator(int x,int y,int p)
 {
 	int tries;
 	while (1)
 	{
-		array(array(int)) area=generate(x,y,p,10);
+		array(array(int)) area=generate(x,y,p);
 		if (area) {call_out(generated,0,x,y,p,area); break;}
 		if (!curgame) call_out(say,0,"Still generating... "+(++tries));
 	}
