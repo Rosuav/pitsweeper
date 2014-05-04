@@ -188,25 +188,24 @@ void sweep(string sweepme,int|void banner)
 	{
 		int x=ltr-'a',y=num-1;
 		if (x>=sizeof(area) || y>=sizeof(area[0])) {say(sprintf("Out of range (max is %c%d)\n",'A'-1+sizeof(area),sizeof(area[0]))); return;}
-		if (area[x][y]<9) return; //Already swept, ignore
+		if (area[x][y]<10) return; //Already swept, ignore
 		string msg=sprintf("%c%d",'A'+x,1+y);
-		/* Rather than having the 'confirm' option, probably better to simply allow removal of banners (assuming misplaced banner doesn't equal end of game).
-		if (!confirm && (area[x][y]==9 || area[x][y]>19))
-		{
-			if (banner) caller->tell("That place already has a pit banner on it.\n");
-			else caller->tell("That place has a pit banner on it. Use 'sweep confirm "+msg+"' to ignore it.\n");
-			continue;
-		}
-		if (area[x][y]>19) {area[x][y]-=10; msg+=", ignoring the banner";} //So if you "banner confirm B4" when there's already a banner there, it'll say "You place a banner on B4, ignoring the banner.". Weird but it won't break anything.
-		*/
 		if (banner)
 		{
-			//The command was "banner <loc>" not "sweep <loc>".
+			//Right click - place (toggle, possibly) banner, rather than sweeping
+			if (area[x][y]>19)
+			{
+				area[x][y]-=10;
+				buttons[x][y]->set_label(" ");
+				say("You remove the banner from "+msg+".");
+				return;
+			}
 			area[x][y]+=10;
 			buttons[x][y]->set_label("[/]");
 			say("You place a banner on "+msg+".");
 			return;
 		}
+		if (area[x][y]>19) return; //Has a banner - ignore the click
 		say("You sweep "+msg+". "+sweepmsg[area[x][y]-=10]);
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
 		if (area[x][y]==9) buttons[x][y]->set_label("[/]")->set_sensitive(0);
