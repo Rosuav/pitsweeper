@@ -206,7 +206,12 @@ void sweep(string sweepme,int|void banner)
 		if (area[x][y]>19) return; //Has a banner - ignore the click
 		area[x][y]-=10;
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
-		if (area[x][y]==9) buttons[x][y]->set_label("[/]")->set_sensitive(0);
+		if (area[x][y]==9)
+		{
+			buttons[x][y]->set_label("[/]")->set_sensitive(0);
+			say("You fell into a pit!");
+			//May be game over (or may just impact your score).
+		}
 		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
 		if (!area[x][y]) //Empty! Sweep the surrounding areas too.
 		{
