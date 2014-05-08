@@ -2,6 +2,20 @@
 
 TODO: Options dialog with board size (with some presets), death options (does
 digging a pit end the game? does marking a non-pit?), etc.
+
+Game mode consists of three numbers (xsize, ysize, pits), and will be expanded
+to four when hideseek mode is implemented (number of tokens - 0 with nontoken
+gameplay). Separately, there will be the gameplay options mode, which will be
+one of these:
+"gentle" - nothing ends the game except actual completion
+"classic" - sweeping a pit ends the game, flagging a non-pit doesn't
+"logic" - sweeping a pit or flagging a non-pit ends the game
+"hideseek" - sweeping a pit doesn't end a game, and you can sweep a flagged pit
+
+In hideseek mode, re-sweeping a swept pit may be important, but won't affect
+your score. In all modes, your score will be a tuple ({pits swept, time taken}),
+lower is better. Obviously classic and logic mode will always have the first
+figure at 0, but the other two won't.
 */
 
 array(array(int)) curgame; //Game field displayed to user
