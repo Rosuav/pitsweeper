@@ -199,7 +199,7 @@ void sweep(string sweepme,int|void banner)
 				return;
 			}
 			area[x][y]+=10;
-			buttons[x][y]->set_label("[/]");
+			buttons[x][y]->set_label("\u2691");
 			return;
 		}
 		if (area[x][y]>19) return; //Has a banner - ignore the click
@@ -207,7 +207,7 @@ void sweep(string sweepme,int|void banner)
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
 		if (area[x][y]==9)
 		{
-			buttons[x][y]->set_label("[/]")->set_sensitive(0);
+			buttons[x][y]->set_label("\u2691")->set_sensitive(0);
 			say("You fell into a pit!");
 			//May be game over (or may just impact your score).
 		}
