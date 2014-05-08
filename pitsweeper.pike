@@ -8,6 +8,8 @@ array(array(int)) curgame; //Game field displayed to user
 array(array(int)) nextgame; //Game field ready to display
 array(array(GTK2.Button)) buttons;
 
+Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
+
 GTK2.Label msg;
 GTK2.Table tb;
 
@@ -66,6 +68,7 @@ region hint(array(array(int)) area)
 
 array(array(int)) generate(int xsize,int ysize,int pits)
 {
+	int start=time();
 	int tries=0;
 	while (1)
 	{
@@ -104,7 +107,7 @@ array(array(int)) generate(int xsize,int ysize,int pits)
 		foreach (area,array(int) col) foreach (col,int cell) if (cell>9) {done=0; break;}
 		if (!done) continue;
 		for (int x=0;x<sizeof(area);++x) for (int y=0;y<sizeof(area[0]);++y) area[x][y]+=10; //Hide it all in gravel again
-		call_out(say,0,"Found solvable game in "+tries+" tries.");
+		call_out(say,0,"Found solvable game in "+tries+" tries, "+(time()-start)+" seconds.");
 		return area;
 	}
 }
@@ -136,6 +139,7 @@ void generated(int xsz,int ysz,int pits,array(array(int)) area)
 	//back to waiting for the other thread.)
 	curgame=area;
 	tb->resize(1,1);
+	tb->get_children()->destroy();
 	buttons=allocate(xsz,allocate(ysz));
 	foreach (area;int x;array(int) col) foreach (col;int y;int cell)
 	{
@@ -257,16 +261,34 @@ void button(GTK2.Button self,GTK2.GdkEvent ev,string loc)
 	if (ev->button==3) sweep(loc,1);
 }
 
+void newgame()
+{
+	//TODO: If current game not finished, prompt.
+	curgame=0;
+	if (array ng=nextgame) {nextgame=0; generated(15,15,60,ng);}
+	else say("Generating game, please wait...");
+	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,15,15,60);
+}
+
+GTK2.MenuItem menuitem(string label,function event)
+{
+	GTK2.MenuItem mi=GTK2.MenuItem(label);
+	mi->signal_connect("activate",event);
+	return mi;
+}
+
 int main()
 {
 	GTK2.setup_gtk();
 	GTK2.Window(GTK2.WindowToplevel)->set_title("Pitsweeper")->add(GTK2.Vbox(0,0)
 		->pack_start(GTK2.MenuBar()
-			->add(GTK2.MenuItem("(stub)"))
+			->add(GTK2.MenuItem("_Game")->set_submenu((object)GTK2.Menu()
+				->add(menuitem("_New",newgame))
+			))
 		,0,0,0)
 		->pack_start(msg=GTK2.Label(""),0,0,0)
 		->add(tb=GTK2.Table(1,1,1))
 	)->show_all()->signal_connect("delete-event",lambda() {exit(0);});
-	Thread.Thread(generator,15,15,60);
+	newgame();
 	return -1;
 }
