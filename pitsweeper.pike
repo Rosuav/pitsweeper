@@ -7,6 +7,8 @@ digging a pit end the game? does marking a non-pit?), etc.
 array(array(int)) curgame; //Game field displayed to user
 array(array(int)) nextgame; //Game field ready to display
 array(array(GTK2.Button)) buttons;
+array(int) gamemode=({15,15,60}); //xsize, ysize, pits - what the user asked for
+array(int) nextmode; //gamemode of the nextgame
 
 Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
 
@@ -127,16 +129,14 @@ void generator(int x,int y,int p)
 //Main thread callback when the generator thread succeeds.
 void generated(int xsz,int ysz,int pits,array(array(int)) area)
 {
+	if (!equal(gamemode,({xsz,ysz,pits}))) return; //Wrong game mode, ignore it. Possibly an old call_out or a race condition.
 	if (curgame)
 	{
 		//Retain this game map for later. TODO: Save to disk.
-		nextgame=area;
+		nextgame=area; nextmode=({xsz,ysz,pits});
 		return;
 	}
 	//Game generated. Let's do this!
-	//TODO: Check that the metadata (xsz,ysz,pits) matches what we want/expect.
-	//(If it doesn't, this is an old call_out or a race; just ignore it and go
-	//back to waiting for the other thread.)
 	curgame=area;
 	tb->resize(1,1);
 	tb->get_children()->destroy();
@@ -265,9 +265,9 @@ void newgame()
 {
 	//TODO: If current game not finished, prompt.
 	curgame=0;
-	if (array ng=nextgame) {nextgame=0; generated(15,15,60,ng);}
+	if (array ng=nextgame) {nextgame=0; generated(@nextmode,ng);}
 	else say("Generating game, please wait...");
-	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,15,15,60);
+	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,@gamemode);
 }
 
 GTK2.MenuItem menuitem(string label,function event)
