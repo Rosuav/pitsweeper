@@ -26,6 +26,7 @@ array(int) nextmode; //gamemode of the nextgame
 
 Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
 
+GTK2.Window mainwindow;
 GTK2.Label msg;
 GTK2.Table tb;
 
@@ -154,8 +155,8 @@ void generated(array(int) mode,array(array(int)) area)
 	//Game generated. Let's do this!
 	curgame=area;
 	[int xsz,int ysz,int pits]=mode;
-	tb->resize(1,1);
 	tb->get_children()->destroy();
+	tb->resize(1,1);
 	buttons=allocate(xsz,allocate(ysz));
 	foreach (area;int x;array(int) col) foreach (col;int y;int cell)
 	{
@@ -165,6 +166,7 @@ void generated(array(int) mode,array(array(int)) area)
 	}
 	sweep("A1");
 	tb->show_all();
+	mainwindow->resize(1,1);
 }
 
 array sweepmsg=({
@@ -297,7 +299,8 @@ GTK2.MenuItem menuitem(string label,function event,mixed|void arg)
 int main()
 {
 	GTK2.setup_gtk();
-	GTK2.Window(GTK2.WindowToplevel)->set_title("Pitsweeper")->add(GTK2.Vbox(0,0)
+	mainwindow=GTK2.Window(GTK2.WindowToplevel);
+	mainwindow->set_title("Pitsweeper")->add(GTK2.Vbox(0,0)
 		->pack_start(GTK2.MenuBar()
 			->add(GTK2.MenuItem("_Game")->set_submenu((object)GTK2.Menu()
 				->add(menuitem("_New",newgame))
