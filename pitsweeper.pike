@@ -68,8 +68,9 @@ region hint(array(array(int)) area)
 	}
 }
 
-array(array(int)) generate(int xsize,int ysize,int pits)
+array(array(int)) generate(array(int) mode)
 {
+	[int xsize,int ysize,int pits]=mode;
 	int start=time();
 	int tries=0;
 	while (1)
@@ -115,29 +116,30 @@ array(array(int)) generate(int xsize,int ysize,int pits)
 }
 
 //Thread function: attempt to generate games, passing them back via call_out to generated below.
-void generator(int x,int y,int p)
+void generator(array(int) mode)
 {
 	int tries;
 	while (1)
 	{
-		array(array(int)) area=generate(x,y,p);
-		if (area) {call_out(generated,0,x,y,p,area); break;}
+		array(array(int)) area=generate(mode);
+		if (area) {call_out(generated,0,mode,area); break;}
 		if (!curgame) call_out(say,0,"Still generating... "+(++tries));
 	}
 }
 
 //Main thread callback when the generator thread succeeds.
-void generated(int xsz,int ysz,int pits,array(array(int)) area)
+void generated(array(int) mode,array(array(int)) area)
 {
-	if (!equal(gamemode,({xsz,ysz,pits}))) return; //Wrong game mode, ignore it. Possibly an old call_out or a race condition.
+	if (!equal(gamemode,mode)) return; //Wrong game mode, ignore it. Possibly an old call_out or a race condition.
 	if (curgame)
 	{
 		//Retain this game map for later. TODO: Save to disk.
-		nextgame=area; nextmode=({xsz,ysz,pits});
+		nextgame=area; nextmode=mode;
 		return;
 	}
 	//Game generated. Let's do this!
 	curgame=area;
+	[int xsz,int ysz,int pits]=mode;
 	tb->resize(1,1);
 	tb->get_children()->destroy();
 	buttons=allocate(xsz,allocate(ysz));
@@ -265,9 +267,9 @@ void newgame()
 {
 	//TODO: If current game not finished, prompt.
 	curgame=0;
-	if (array ng=nextgame) {nextgame=0; generated(@nextmode,ng);}
+	if (array ng=nextgame) {nextgame=0; generated(nextmode,ng);}
 	else say("Generating game, please wait...");
-	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,@gamemode);
+	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,gamemode);
 }
 
 GTK2.MenuItem menuitem(string label,function event)
