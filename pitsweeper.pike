@@ -21,7 +21,7 @@ figure at 0, but the other two won't.
 array(array(int)) curgame; //Game field displayed to user
 array(array(int)) nextgame; //Game field ready to display
 array(array(GTK2.Button)) buttons;
-array(int) gamemode=({15,15,60}); //xsize, ysize, pits - what the user asked for
+array(int) gamemode=({8,8,8}); //xsize, ysize, pits - what the user asked for
 array(int) nextmode; //gamemode of the nextgame
 
 Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
@@ -277,19 +277,20 @@ void button(GTK2.Button self,GTK2.GdkEvent ev,string loc)
 	if (ev->button==3) sweep(loc,1);
 }
 
-void newgame()
+void newgame(object self,array|void mode)
 {
 	//TODO: If current game not finished, prompt.
+	if (mode) gamemode=mode;
 	curgame=0;
 	if (array ng=nextgame) {nextgame=0; generated(nextmode,ng);}
 	else say("Generating game, please wait...");
 	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,gamemode);
 }
 
-GTK2.MenuItem menuitem(string label,function event)
+GTK2.MenuItem menuitem(string label,function event,mixed|void arg)
 {
 	GTK2.MenuItem mi=GTK2.MenuItem(label);
-	mi->signal_connect("activate",event);
+	mi->signal_connect("activate",event,arg);
 	return mi;
 }
 
@@ -300,11 +301,15 @@ int main()
 		->pack_start(GTK2.MenuBar()
 			->add(GTK2.MenuItem("_Game")->set_submenu((object)GTK2.Menu()
 				->add(menuitem("_New",newgame))
+				->add(GTK2.SeparatorMenuItem())
+				->add(menuitem("_Easy",newgame,({8,8,8})))
+				->add(menuitem("_Medium",newgame,({14,14,40})))
+				->add(menuitem("_Hard",newgame,({20,20,100})))
 			))
 		,0,0,0)
 		->pack_start(msg=GTK2.Label(""),0,0,0)
 		->add(tb=GTK2.Table(1,1,1))
 	)->show_all()->signal_connect("delete-event",lambda() {exit(0);});
-	newgame();
+	newgame(0);
 	return -1;
 }
