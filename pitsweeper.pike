@@ -186,7 +186,10 @@ void say(string newmsg)
 	msg->set_text(newmsg);
 }
 
-//See if the game's over
+//See if the game's over. In the case of hideseek games, that means that all tokens have been found.
+//Otherwise, it means that all clear squares have been swept, and all pits have been flagged.
+//Note that flagging any non-pit will prevent game completion, but sweeping a pit auto-flags it and
+//will result in game completion as normal (albeit with a penalty on your score).
 void checkdone()
 {
 	int done=1;
