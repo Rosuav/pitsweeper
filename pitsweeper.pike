@@ -1,11 +1,8 @@
 /* Pitsweeper - Minesweeper variant with guaranteed-solvable games.
 
-TODO: Options dialog with board size (with some presets), death options (does
-digging a pit end the game? does marking a non-pit?), etc.
-
-Game mode consists of three numbers (xsize, ysize, pits), and will be expanded
-to four when hideseek mode is implemented (number of tokens - 0 with nontoken
-gameplay). Separately, playing style is one of these:
+Game mode consists of four numbers (xsize, ysize, pits, ntokens). The last one
+is ignored other than in hideseek mode.
+Playing style is one of these:
 "gentle" - nothing ends the game except actual completion
 "classic" - sweeping a pit ends the game, flagging a non-pit doesn't
 "logic" - sweeping a pit or flagging a non-pit ends the game
@@ -26,11 +23,12 @@ Limits:
 array(array(int)) curgame; //Game field displayed to user
 array(array(int)) nextgame; //Game field ready to display
 array(array(GTK2.Button)) buttons;
-array(int) gamemode=({8,8,8}); //xsize, ysize, pits - what the user asked for
+array(int) gamemode=({8,8,8,4}); //xsize, ysize, pits, ntokens - what the user asked for
 array(int) nextmode; //gamemode of the nextgame
 int pitfalls,starttime;
 string playstyle="classic";
 int gameover; //When 1, no gameplay is possible.
+array(int) tokens;
 
 Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
 
@@ -93,7 +91,7 @@ region hint(array(array(int)) area)
 
 array(array(int)) generate(array(int) mode)
 {
-	[int xsize,int ysize,int pits]=mode;
+	[int xsize,int ysize,int pits,int ntokens]=mode;
 	int start=time();
 	int tries=0;
 	while (1)
@@ -162,31 +160,27 @@ void generated(array(int) mode,array(array(int)) area)
 	}
 	//Game generated. Let's do this!
 	curgame=area; pitfalls=starttime=gameover=0;
-	[int xsz,int ysz,int pits]=mode;
+	[int xsz,int ysz,int pits,int ntokens]=mode;
 	tb->get_children()->destroy();
 	tb->resize(1,1);
 	buttons=allocate(xsz,allocate(ysz));
+	multiset(int) mines=(<>);
 	foreach (area;int x;array(int) col) foreach (col;int y;int cell)
 	{
+		if (cell==19) mines[x<<8|y]=1;
 		GTK2.Button btn=buttons[x][y]=GTK2.Button("   ")->set_focus_on_click(0);
 		tb->attach_defaults(btn,x,x+1,y,y+1);
 		btn->signal_connect("event",button,sprintf("%c%d",'A'+x,1+y));
 	}
+	//Place some tokens, in case the user wants to play hideseek. (This
+	//could be bracketed with if (playstyle=="hideseek") except that it's
+	//currently possible to change playstyle mid-game. It's cheap, anyhow.)
+	tokens=({ });
+	while (ntokens--) {int cur=random(mines); tokens+=({cur}); mines[cur]=0;}
 	sweep("A1");
 	tb->show_all();
 	mainwindow->resize(1,1);
 }
-
-/* Maybe reinstate the hidden-tokens mechanic? Code straight from Minstrel Hall and won't work here unadjusted.
-		if (nhiddens)
-		{
-			multiset(int) mines=(<>);
-			foreach (area;int x;array(int) row) foreach (row;int y;int cell) if (cell==19) mines[x<<8|y]=1;
-			array(int) hiddens=({ });
-			while (nhiddens--) {int cur=random(mines); hiddens+=({cur}); mines[cur]=0;}
-			caller->location->tmp->pitsweeper_hiddens=hiddens;
-		}
-*/
 
 void say(string newmsg)
 {
@@ -200,7 +194,8 @@ void say(string newmsg)
 void checkdone()
 {
 	int done=1;
-	out: foreach (curgame,array(int) col) foreach (col,int cell) if (cell>=10 && cell<29) {done=0; break out;}
+	if (playstyle=="hideseek") {foreach (tokens,int pos) if (pos!=-1) {done=0; break;}}
+	else out: foreach (curgame,array(int) col) foreach (col,int cell) if (cell>=10 && cell<29) {done=0; break out;}
 	if (done) {say(sprintf("Game completed! %d pit falls, %d seconds.",pitfalls,time()-starttime)); gameover=1;}
 }
 
@@ -236,9 +231,22 @@ void sweep(string sweepme,int|void banner)
 		if (area[x][y]==9)
 		{
 			buttons[x][y]->set_label("\u2691")->set_sensitive(0);
-			say("You fell into a pit!");
 			++pitfalls;
-			if ((<"classic","logic">)[playstyle]) {gameover=1; return;}
+			if ((<"classic","logic">)[playstyle]) {say("You fell into a pit and broke every bone in your body!"); gameover=1; return;}
+			if (playstyle=="hideseek")
+			{
+				string msg="";
+				foreach (tokens;int i;int pos)
+				{
+					if (pos==-1) {msg+=", [found]"; continue;}
+					int tx=pos>>8,ty=pos&255;
+					if (tx==x && ty==y) {msg+=", [HERE]"; tokens[i]=-1;}
+					else msg+=sprintf(", [%.2f]",sqrt((float)(pow(tx-x,2)+pow(ty-y,2))));
+				}
+				if (msg!="") say(msg[2..]);
+				checkdone();
+			}
+			else say("You fell into a pit!");
 		}
 		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
 		if (!area[x][y]) //Empty! Sweep the surrounding areas too.
@@ -256,29 +264,6 @@ void sweep(string sweepme,int|void banner)
 			trysweep(x,y-1);
 			trysweep(x-1,y-1);
 		}
-		/* More hidden-tokens code.
-		if (area[x][y]==9) //Pit. Check for hideseek tokens.
-		{
-			prime->cmds->roll(caller,"(falling damage) 4d6");
-			if (array(int) hiddens=caller->location->tmp->pitsweeper_hiddens)
-			{
-				string msg="";
-				foreach (hiddens,int pos)
-				{
-					int hx=pos>>8,hy=pos&255;
-					if (hx==x && hy==y)
-					{
-						emote("%n found a hidden token! WOOHOO!",caller,"You found a hidden token! CONGRATS!");
-						if (!sizeof(caller->location->tmp->pitsweeper_hiddens-=({pos}))) {m_delete(caller->location->tmp,"pitsweeper_hiddens"); caller->tell("And that's all the tokens found!\n");}
-						continue;
-					}
-					float dist=sqrt((float)(pow(hx-x,2)+pow(hy-y,2)));
-					msg+=sprintf("There is a token %.4f feet (%.4f squares) from this pit.\n",dist*5,dist);
-				}
-				if (msg!="") bcast(caller->location,msg);
-			}
-		}
-		*/
 		checkdone();
 	}
 }
@@ -307,14 +292,20 @@ class gameoptions
 	void create()
 	{
 		object rb=GTK2.RadioButton("Gentle");
-		win->mode=({rb,GTK2.RadioButton("Classic",rb),GTK2.RadioButton("Logic",rb)});
-		win->mode[search(({"gentle","classic","logic"}),playstyle)]->set_active(1);
+		win->mode=({rb,GTK2.RadioButton("Classic",rb),GTK2.RadioButton("Logic",rb),GTK2.RadioButton("Hide/Seek",rb)});
+		win->mode[search(({"gentle","classic","logic","hideseek"}),playstyle)]->set_active(1);
 		win->mainwindow=GTK2.Window(0)->set_title("Game options")->set_transient_for(mainwindow)->add(GTK2.Vbox(0,0)
 			->add(GTK2.Frame("Playing style")->add(GTK2.Vbox(0,0)
 				->add(GTK2.Hbox(0,10)->add(win->mode[*])[0])
-				->add(GTK2.Label(#"Gentle: The game continues until every square is swept or marked.
-Classic: Sweeping a pit instantly ends the game, but flags\n\tcan be set and removed at will.
-Logic: Flagging a non-pit instantly ends the game.")->set_alignment(0.0,0.0))
+				->add(GTK2.Label(#"Gentle: The game continues until every square is swept or
+	marked. Your score reflects how many pits you hit.
+Classic: Sweeping a pit instantly ends the game, but flags
+	can be set and removed at will.
+Logic: Flagging a non-pit instantly ends the game.
+Hide and Seek: Inside some of the pits are tokens. Sweep pits
+	to find them; each time you descend into a pit, you
+	learn the hypotenusal distances to all tokens. Find
+	all the tokens to win.")->set_alignment(0.0,0.0))
 			))
 			->add(GTK2.HbuttonBox()
 				->add(win->pb_close=GTK2.Button((["use-stock":1,"label":GTK2.STOCK_CLOSE])))
@@ -324,7 +315,7 @@ Logic: Flagging a non-pit instantly ends the game.")->set_alignment(0.0,0.0))
 	}
 	void closewindow()
 	{
-		foreach (win->mode;int i;object rb) if (rb->get_active()) playstyle=({"gentle","classic","logic"})[i];
+		foreach (win->mode;int i;object rb) if (rb->get_active()) playstyle=({"gentle","classic","logic","hideseek"})[i];
 		win->mainwindow->destroy();
 	}
 }
@@ -345,9 +336,9 @@ int main()
 			->add(GTK2.MenuItem("_Game")->set_submenu(GTK2.Menu()
 				->add(menuitem("_New",newgame))
 				->add(GTK2.SeparatorMenuItem())
-				->add(menuitem("_Easy",newgame,({8,8,8})))
-				->add(menuitem("_Medium",newgame,({14,14,40})))
-				->add(menuitem("_Hard",newgame,({20,20,100})))
+				->add(menuitem("_Easy",newgame,({8,8,8,4})))
+				->add(menuitem("_Medium",newgame,({14,14,40,5})))
+				->add(menuitem("_Hard",newgame,({20,20,100,10})))
 				->add(GTK2.SeparatorMenuItem())
 				->add(menuitem("_Options",gameoptions))
 			))
