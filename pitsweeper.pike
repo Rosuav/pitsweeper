@@ -15,8 +15,6 @@ In hideseek mode, re-sweeping a swept pit may be important, but won't affect
 your score. In all modes, your score will be a tuple ({pits swept, time taken}),
 lower is better. Obviously classic and logic mode will always have the first
 figure at 0, but the other two won't.
-
-Bug: xsize and ysize seem to be backward (???)
 */
 
 array(array(int)) curgame; //Game field displayed to user
@@ -165,7 +163,7 @@ void generated(array(int) mode,array(array(int)) area)
 	foreach (area;int x;array(int) col) foreach (col;int y;int cell)
 	{
 		GTK2.Button btn=buttons[x][y]=GTK2.Button("   ")->set_focus_on_click(0);
-		tb->attach_defaults(btn,y,y+1,x,x+1);
+		tb->attach_defaults(btn,x,x+1,y,y+1);
 		btn->signal_connect("event",button,sprintf("%c%d",'A'+x,1+y));
 	}
 	sweep("A1");
