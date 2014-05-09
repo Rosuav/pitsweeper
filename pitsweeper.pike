@@ -170,19 +170,6 @@ void generated(array(int) mode,array(array(int)) area)
 	mainwindow->resize(1,1);
 }
 
-array sweepmsg=({
-	"The bristles do not bend at all.",
-	"Very few bristles bend.",
-	"A few bristles bend.",
-	"Some bristles bend.",
-	"Half the bristles bend!",
-	"More than half the bristles bend!",
-	"Three-quarters of the bristles bend!",
-	"Nearly all the bristles bend!",
-	"EVERY BRISTLE on the broom bends!!",
-	"There is a pit there!" //9 = you just swept yourself into a pit. Also used for -1.
-});
-
 /* Maybe reinstate the hidden-tokens mechanic? Code straight from Minstrel Hall and won't work here unadjusted.
 		if (nhiddens)
 		{
