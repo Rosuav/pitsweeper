@@ -306,9 +306,9 @@ class gameoptions
 		win->mainwindow=GTK2.Window(0)->set_title("Game options")->set_transient_for(mainwindow)->add(GTK2.Vbox(0,0)
 			->add(GTK2.Frame("Playing style")->add(GTK2.Vbox(0,0)
 				->add(GTK2.Hbox(0,10)->add(win->mode[*])[0])
-				->add(GTK2.Label("Gentle: The game continues until every square is swept or marked."))
-				->add(GTK2.Label("Classic: Sweeping a pit instantly ends the game, but flags can be set and removed at will."))
-				->add(GTK2.Label("Logic: Flagging a non-pit instantly ends the game."))
+				->add(GTK2.Label(#"Gentle: The game continues until every square is swept or marked.
+Classic: Sweeping a pit instantly ends the game, but flags\n\tcan be set and removed at will.
+Logic: Flagging a non-pit instantly ends the game.")->set_alignment(0.0,0.0))
 			))
 			->add(GTK2.HbuttonBox()
 				->add(win->pb_close=GTK2.Button((["use-stock":1,"label":GTK2.STOCK_CLOSE])))
