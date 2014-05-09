@@ -198,6 +198,14 @@ void say(string newmsg)
 	msg->set_text(newmsg);
 }
 
+//See if the game's over
+void checkdone()
+{
+	int done=1;
+	out: foreach (curgame,array(int) col) foreach (col,int cell) if (cell>=10 && cell<29) {done=0; break out;}
+	if (done) say("Game completed!");
+}
+
 void sweep(string sweepme,int|void banner)
 {
 	array(array(int)) area=curgame;
@@ -218,6 +226,7 @@ void sweep(string sweepme,int|void banner)
 			}
 			area[x][y]+=10;
 			buttons[x][y]->set_label("\u2691");
+			checkdone();
 			return;
 		}
 		if (area[x][y]>19) return; //Has a banner - ignore the click
@@ -268,6 +277,7 @@ void sweep(string sweepme,int|void banner)
 			}
 		}
 		*/
+		checkdone();
 	}
 }
 
