@@ -23,6 +23,7 @@ array(array(int)) nextgame; //Game field ready to display
 array(array(GTK2.Button)) buttons;
 array(int) gamemode=({8,8,8}); //xsize, ysize, pits - what the user asked for
 array(int) nextmode; //gamemode of the nextgame
+int pitfalls,starttime;
 
 Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
 
@@ -153,7 +154,7 @@ void generated(array(int) mode,array(array(int)) area)
 		return;
 	}
 	//Game generated. Let's do this!
-	curgame=area;
+	curgame=area; pitfalls=starttime=0;
 	[int xsz,int ysz,int pits]=mode;
 	tb->get_children()->destroy();
 	tb->resize(1,1);
@@ -203,11 +204,12 @@ void checkdone()
 {
 	int done=1;
 	out: foreach (curgame,array(int) col) foreach (col,int cell) if (cell>=10 && cell<29) {done=0; break out;}
-	if (done) say("Game completed!");
+	if (done) say(sprintf("Game completed! %d pit falls, %d seconds.",pitfalls,time()-starttime));
 }
 
 void sweep(string sweepme,int|void banner)
 {
+	if (!starttime) starttime=time();
 	array(array(int)) area=curgame;
 	if (sscanf(lower_case(sweepme),"%c%d",int ltr,int num) && ltr>='a' && ltr<='z' && num>0)
 	{
@@ -236,6 +238,7 @@ void sweep(string sweepme,int|void banner)
 		{
 			buttons[x][y]->set_label("\u2691")->set_sensitive(0);
 			say("You fell into a pit!");
+			++pitfalls;
 			//May be game over (or may just impact your score).
 		}
 		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
