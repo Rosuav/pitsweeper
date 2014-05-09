@@ -229,7 +229,7 @@ void sweep(string sweepme,int|void banner)
 		if (area[x][y]==-1) area[x][y]=9; //If you re-sweep a pit, don't destroy the info.
 		if (area[x][y]==9)
 		{
-			buttons[x][y]->set_label("\u2691")->set_sensitive(0);
+			buttons[x][y]->set_label("\u2690");
 			++pitfalls;
 			if ((<"classic","logic">)[playstyle]) {say("You fell into a pit and broke every bone in your body!"); gameover=1; return;}
 			if (playstyle=="hideseek")
