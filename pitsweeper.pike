@@ -5,8 +5,7 @@ digging a pit end the game? does marking a non-pit?), etc.
 
 Game mode consists of three numbers (xsize, ysize, pits), and will be expanded
 to four when hideseek mode is implemented (number of tokens - 0 with nontoken
-gameplay). Separately, there will be the gameplay options mode, which will be
-one of these:
+gameplay). Separately, playing style is one of these:
 "gentle" - nothing ends the game except actual completion
 "classic" - sweeping a pit ends the game, flagging a non-pit doesn't
 "logic" - sweeping a pit or flagging a non-pit ends the game
@@ -26,6 +25,8 @@ array(array(GTK2.Button)) buttons;
 array(int) gamemode=({8,8,8}); //xsize, ysize, pits - what the user asked for
 array(int) nextmode; //gamemode of the nextgame
 int pitfalls,starttime;
+string playstyle="classic";
+int gameover; //When 1, no gameplay is possible.
 
 Thread.Thread genthread; //Will always (post-initialization) exist, but might be a terminated thread.
 
@@ -156,7 +157,7 @@ void generated(array(int) mode,array(array(int)) area)
 		return;
 	}
 	//Game generated. Let's do this!
-	curgame=area; pitfalls=starttime=0;
+	curgame=area; pitfalls=starttime=gameover=0;
 	[int xsz,int ysz,int pits]=mode;
 	tb->get_children()->destroy();
 	tb->resize(1,1);
@@ -196,11 +197,12 @@ void checkdone()
 {
 	int done=1;
 	out: foreach (curgame,array(int) col) foreach (col,int cell) if (cell>=10 && cell<29) {done=0; break out;}
-	if (done) say(sprintf("Game completed! %d pit falls, %d seconds.",pitfalls,time()-starttime));
+	if (done) {say(sprintf("Game completed! %d pit falls, %d seconds.",pitfalls,time()-starttime)); gameover=1;}
 }
 
 void sweep(string sweepme,int|void banner)
 {
+	if (gameover) return;
 	if (!starttime) starttime=time();
 	array(array(int)) area=curgame;
 	if (sscanf(lower_case(sweepme),"%c%d",int ltr,int num) && ltr>='a' && ltr<='z' && num>0)
@@ -212,6 +214,7 @@ void sweep(string sweepme,int|void banner)
 		if (banner)
 		{
 			//Right click - place (toggle, possibly) banner, rather than sweeping
+			if (playstyle=="logic" && area[x][y]>9 && area[x][y]<19) {say("That's not a pit!"); gameover=1; return;}
 			if (area[x][y]>19)
 			{
 				area[x][y]-=10;
@@ -231,7 +234,7 @@ void sweep(string sweepme,int|void banner)
 			buttons[x][y]->set_label("\u2691")->set_sensitive(0);
 			say("You fell into a pit!");
 			++pitfalls;
-			//May be game over (or may just impact your score).
+			if ((<"classic","logic">)[playstyle]) {gameover=1; return;}
 		}
 		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
 		if (!area[x][y]) //Empty! Sweep the surrounding areas too.
@@ -294,6 +297,34 @@ void newgame(object self,array|void mode)
 	if (!genthread || genthread->status()!=Thread.THREAD_RUNNING) genthread=Thread.Thread(generator,gamemode);
 }
 
+class gameoptions
+{
+	mapping(string:mixed) win=([]);
+	void create()
+	{
+		object rb=GTK2.RadioButton("Gentle");
+		win->mode=({rb,GTK2.RadioButton("Classic",rb),GTK2.RadioButton("Logic",rb)});
+		win->mode[search(({"gentle","classic","logic"}),playstyle)]->set_active(1);
+		win->mainwindow=GTK2.Window(0)->set_title("Game options")->set_transient_for(mainwindow)->add(GTK2.Vbox(0,0)
+			->add(GTK2.Frame("Playing style")->add(GTK2.Vbox(0,0)
+				->add(GTK2.Hbox(0,10)->add(win->mode[*])[0])
+				->add(GTK2.Label("Gentle: The game continues until every square is swept or marked."))
+				->add(GTK2.Label("Classic: Sweeping a pit instantly ends the game, but flags can be set and removed at will."))
+				->add(GTK2.Label("Logic: Flagging a non-pit instantly ends the game."))
+			))
+			->add(GTK2.HbuttonBox()
+				->add(win->pb_close=GTK2.Button((["use-stock":1,"label":GTK2.STOCK_CLOSE])))
+			)
+		)->show_all();
+		win->pb_close->signal_connect("clicked",closewindow);
+	}
+	void closewindow()
+	{
+		foreach (win->mode;int i;object rb) if (rb->get_active()) playstyle=({"gentle","classic","logic"})[i];
+		win->mainwindow->destroy();
+	}
+}
+
 GTK2.MenuItem menuitem(string label,function event,mixed|void arg)
 {
 	GTK2.MenuItem mi=GTK2.MenuItem(label);
@@ -307,12 +338,14 @@ int main()
 	mainwindow=GTK2.Window(GTK2.WindowToplevel);
 	mainwindow->set_title("Pitsweeper")->add(GTK2.Vbox(0,0)
 		->pack_start(GTK2.MenuBar()
-			->add(GTK2.MenuItem("_Game")->set_submenu((object)GTK2.Menu()
+			->add(GTK2.MenuItem("_Game")->set_submenu(GTK2.Menu()
 				->add(menuitem("_New",newgame))
 				->add(GTK2.SeparatorMenuItem())
 				->add(menuitem("_Easy",newgame,({8,8,8})))
 				->add(menuitem("_Medium",newgame,({14,14,40})))
 				->add(menuitem("_Hard",newgame,({20,20,100})))
+				->add(GTK2.SeparatorMenuItem())
+				->add(menuitem("_Options",gameoptions))
 			))
 		,0,0,0)
 		->pack_start(msg=GTK2.Label(""),0,0,0)
