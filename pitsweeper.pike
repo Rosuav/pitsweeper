@@ -15,6 +15,12 @@ In hideseek mode, re-sweeping a swept pit may be important, but won't affect
 your score. In all modes, your score will be a tuple ({pits swept, time taken}),
 lower is better. Obviously classic and logic mode will always have the first
 figure at 0, but the other two won't.
+
+Limits:
+* pits <= xsize*ysize/3; possibly /4 for safety, as this AI solver is slower
+  than the OS/2 3D Mines solver, so finding solvable games can take a very
+  long time if there are a lot of pits.
+* ntokens <= pits/2? Definitely ntokens < pits.
 */
 
 array(array(int)) curgame; //Game field displayed to user
