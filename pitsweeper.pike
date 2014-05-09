@@ -199,6 +199,19 @@ void checkdone()
 	if (done) {say(sprintf("Game completed! %d pit falls, %d seconds.",pitfalls,time()-starttime)); gameover=1;}
 }
 
+void showhideseek(int x,int y)
+{
+	string msg=sprintf("At %c%d",'A'+x,1+y);
+	foreach (tokens;int i;int pos)
+	{
+		if (pos==-1) {msg+=", [found]"; continue;}
+		int tx=pos>>8,ty=pos&255;
+		if (tx==x && ty==y) {msg+=", [HERE]"; tokens[i]=-1;}
+		else msg+=sprintf(", [%.2f]",sqrt((float)(pow(tx-x,2)+pow(ty-y,2))));
+	}
+	say(msg);
+}
+
 void sweep(string sweepme,int|void banner)
 {
 	if (gameover) return;
@@ -208,6 +221,7 @@ void sweep(string sweepme,int|void banner)
 	{
 		int x=ltr-'a',y=num-1;
 		if (x>=sizeof(area) || y>=sizeof(area[0])) {say(sprintf("Out of range (max is %c%d)\n",'A'-1+sizeof(area),sizeof(area[0]))); return;} //Shouldn't happen
+		if (area[x][y]==9 && playstyle=="hideseek") showhideseek(x,y); //Re-clicking a pit is valid in hideseek.
 		if (area[x][y]<10) return; //Already swept, ignore
 		if (banner)
 		{
@@ -232,19 +246,7 @@ void sweep(string sweepme,int|void banner)
 			buttons[x][y]->set_label("\u2690");
 			++pitfalls;
 			if ((<"classic","logic">)[playstyle]) {say("You fell into a pit and broke every bone in your body!"); gameover=1; return;}
-			if (playstyle=="hideseek")
-			{
-				string msg=sprintf("At %c%d",'A'+x,1+y);
-				foreach (tokens;int i;int pos)
-				{
-					if (pos==-1) {msg+=", [found]"; continue;}
-					int tx=pos>>8,ty=pos&255;
-					if (tx==x && ty==y) {msg+=", [HERE]"; tokens[i]=-1;}
-					else msg+=sprintf(", [%.2f]",sqrt((float)(pow(tx-x,2)+pow(ty-y,2))));
-				}
-				say(msg);
-				checkdone();
-			}
+			if (playstyle=="hideseek") {showhideseek(x,y); checkdone();}
 			else say("You fell into a pit!");
 		}
 		else buttons[x][y]->set_label(" "+area[x][y]+" ")->set_relief(GTK2.RELIEF_NONE)->set_sensitive(0);
