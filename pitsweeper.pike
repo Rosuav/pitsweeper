@@ -16,6 +16,8 @@ In hideseek mode, re-sweeping a swept pit may be important, but won't affect
 your score. In all modes, your score will be a tuple ({pits swept, time taken}),
 lower is better. Obviously classic and logic mode will always have the first
 figure at 0, but the other two won't.
+
+Bug: xsize and ysize seem to be backward (???)
 */
 
 array(array(int)) curgame; //Game field displayed to user
