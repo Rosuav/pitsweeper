@@ -25,7 +25,7 @@ Limits:
 array(array(int)) curgame; //Game field displayed to user
 array(array(int)) nextgame; //Game field ready to display
 array(array(GTK2.Button)) buttons;
-array(int) gamemode=({8,8,8,4}); //xsize, ysize, pits, ntokens - what the user asked for
+array(int) gamemode=({8,8,10,4}); //xsize, ysize, pits, ntokens - what the user asked for
 array(int) nextmode; //gamemode of the nextgame
 int pitfalls,starttime;
 string playstyle="classic";
@@ -339,7 +339,7 @@ int main()
 			->add(GTK2.MenuItem("_Game")->set_submenu(GTK2.Menu()
 				->add(menuitem("_New",newgame))
 				->add(GTK2.SeparatorMenuItem())
-				->add(menuitem("_Easy",newgame,({8,8,8,4})))
+				->add(menuitem("_Easy",newgame,({8,8,10,4})))
 				->add(menuitem("_Medium",newgame,({14,14,40,5})))
 				->add(menuitem("_Hard",newgame,({20,20,100,10})))
 				->add(GTK2.SeparatorMenuItem())
