@@ -209,7 +209,7 @@ void showhideseek(int x,int y)
 		if (pos==-1) {msg+=", [found]"; continue;}
 		int tx=pos>>8,ty=pos&255;
 		if (tx==x && ty==y) {msg+=", [HERE]"; tokens[i]=-1;}
-		else msg+=sprintf(", [%.2f]",sqrt((float)(pow(tx-x,2)+pow(ty-y,2))));
+		else msg+=sprintf(", [%.3f]",sqrt((float)(pow(tx-x,2)+pow(ty-y,2))));
 	}
 	say(msg);
 }
