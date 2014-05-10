@@ -18,6 +18,8 @@ Limits:
   than the OS/2 3D Mines solver, so finding solvable games can take a very
   long time if there are a lot of pits.
 * ntokens <= pits/2? Definitely ntokens < pits.
+* xsize <= 26, because hideseek tokens are listed with "A1" notation; it's
+  also used internally, but that can be changed.
 */
 
 array(array(int)) curgame; //Game field displayed to user
